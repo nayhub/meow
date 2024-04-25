@@ -2,10 +2,28 @@
 #define MOVING_IMG_H
 
 #include "basics.h"
+#include <stack>
+#include <queue>
+#include <string>
 
 // Clase que representa una imagen como una colección de 3 matrices siguiendo el
 // esquema de colores RGB
 
+enum ActionType {
+    MOVE_RIGHT,
+    MOVE_LEFT,
+    MOVE_UP,
+    MOVE_DOWN,
+    ROTATE
+};
+struct Action {
+    ActionType type;
+    int param;
+};
+
+std::stack<Action> history;
+std::stack<Action> undo_history;
+std::queue<Action> repeatqueue;
 class moving_image {
 private:
   unsigned char **red_layer; // Capa de tonalidades rojas
@@ -46,7 +64,7 @@ public:
 	  green_layer[INIT_Y+i][INIT_X+j] = s_G[i][j];
 	  blue_layer[INIT_Y+i][INIT_X+j] = s_B[i][j];
 	}
-      }   
+  }  
   }
 
   // Destructor de la clase
@@ -76,7 +94,7 @@ public:
     // Mover la capa roja
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG-d; j++)
-	tmp_layer[j][i] = red_layer[i][j+d];      
+	    tmp_layer[j][i] = red_layer[i][j+d];      
     
     for(int i=0; i < H_IMG; i++)
       for(int j=W_IMG-d, k=0; j < W_IMG; j++, k++)
@@ -84,7 +102,7 @@ public:
 
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
-	red_layer[j][i] = tmp_layer[i][j];
+	  red_layer[j][i] = tmp_layer[i][j];
 
     // Mover la capa verde
     for(int i=0; i < H_IMG; i++)
@@ -111,9 +129,16 @@ public:
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
     	blue_layer[i][j] = tmp_layer[i][j];
+
+    Action action;
+    action.type = MOVE_LEFT;
+    action.param = d;
+
+    history.push(action);
+    repeatqueue.push(action);
   }
 
-    // Función que similar desplazar la imagen, de manera circular, d pixeles a la derecha
+  // DERECHAAAAAAAAA
   void move_right(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++) 
@@ -130,7 +155,7 @@ public:
 
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
-	red_layer[i][j] = tmp_layer[i][j];
+	    red_layer[i][j] = tmp_layer[i][j];
 
     // Mover la capa verde
     for(int i=0; i < H_IMG; i++)
@@ -158,9 +183,15 @@ public:
       for(int j=0; j < W_IMG; j++)
     	blue_layer[i][j] = tmp_layer[i][j];
 
+    Action action;
+    action.type = MOVE_RIGHT;
+    action.param = d;
+
+    history.push(action);
+    repeatqueue.push(action);
   }
 
-// Función que similar desplazar la imagen, de manera circular, d pixeles hacia arriba
+// ARRIBAAAAA
   void move_up(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++) 
@@ -204,9 +235,15 @@ public:
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
     	blue_layer[i][j] = tmp_layer[j][i];
-  }
 
-  // Función que similar desplazar la imagen, de manera circular, d pixeles hacia abajo
+    Action action;
+    action.type = MOVE_UP;
+    action.param = d;
+
+    history.push(action);
+    repeatqueue.push(action);
+  }
+  // ABAJOOOOOOOO
   void move_down(int d) {
     unsigned char **tmp_layer = new unsigned char*[H_IMG];
     for(int i=0; i < H_IMG; i++) 
@@ -250,7 +287,16 @@ public:
     for(int i=0; i < H_IMG; i++)
       for(int j=0; j < W_IMG; j++)
     	blue_layer[i][j] = tmp_layer[j][i];
+
+    Action action;
+    action.type = MOVE_DOWN;
+    action.param = d;
+
+    history.push(action);
+    repeatqueue.push(action);
   }
+
+  // ROTATEEEEEEEE
 
   void rotate() {
     unsigned char **tmp_layer = new unsigned char*[W_IMG];
@@ -286,8 +332,137 @@ public:
     for(int i=0; i < W_IMG; i++)
       for(int j=0; j < H_IMG; j++)
 	    blue_layer[i][j] = tmp_layer[i][j];
+
+  history.push({ROTATE, 0});
 }
 
+void repeat() {
+    if(!history.empty()) {
+        Action last_action = history.top();
+        history.pop();
+
+         switch(last_action.type) {
+            case MOVE_LEFT:
+              move_left(last_action.param);
+                break;
+            case MOVE_RIGHT:
+                move_right(last_action.param);
+                break;
+            case MOVE_UP:
+                move_up(last_action.param);
+                break;
+            case MOVE_DOWN:
+                move_down(last_action.param);
+                break;
+            case ROTATE:
+                rotate();
+                break;
+            default:
+                break;
+        }
+    } else {}
+}
+
+void undo() {
+    if(!history.empty()) {
+        Action last_action = history.top();
+        history.pop();
+
+         switch(last_action.type) {
+            case MOVE_LEFT:
+              move_right(last_action.param);
+              undo_history.push(last_action);
+                break;
+            case MOVE_RIGHT:
+                move_left(last_action.param);
+                undo_history.push(last_action);
+                break;
+            case MOVE_UP:
+                move_down(last_action.param);
+                undo_history.push(last_action);
+                break;
+            case MOVE_DOWN:
+                move_up(last_action.param);
+                undo_history.push(last_action);
+                break;
+            case ROTATE:
+                rotate();
+                break;
+            default:
+                break;
+        }
+    } else {}
+}
+
+void redo() {
+    if(!undo_history.empty()) {
+        Action last_undone_action = undo_history.top();
+        undo_history.pop();
+
+          switch(last_undone_action.type) {
+            case MOVE_LEFT:
+              move_left(last_undone_action.param);
+              history.push(last_undone_action);
+                break;
+            case MOVE_RIGHT:
+              move_right(last_undone_action.param);
+              history.push(last_undone_action);
+                break;
+            case MOVE_UP:
+              move_up(last_undone_action.param);
+              history.push(last_undone_action);
+                break;
+            case MOVE_DOWN:
+              move_down(last_undone_action.param);
+              history.push(last_undone_action);
+                break;
+            case ROTATE:
+                rotate();
+                break;
+            default:
+                break;
+          }
+    } else {}
+  }
+
+
+
+void repeat_all() {
+
+  this->draw("repeat_imagen.png");
+    std::queue<Action> repeatqueue_copy = repeatqueue;
+
+    int contador = 1;
+    while(!repeatqueue_copy.empty()) {
+        Action action = repeatqueue_copy.front();
+        repeatqueue_copy.pop();
+
+          switch(action.type) {
+            case MOVE_LEFT:
+              move_left(action.param);
+                break;
+            case MOVE_RIGHT:
+              move_right(action.param);
+                break;
+            case MOVE_UP:
+              move_up(action.param);
+                break;
+            case MOVE_DOWN:
+              move_down(action.param);
+                break;
+            case ROTATE:
+                rotate();
+                break;
+            default:
+                break;
+          }
+
+    std::string nombreArchivo = "repeat_imagen_desplazada_" + std::to_string(contador) + ".png";
+    this->draw(nombreArchivo.c_str());
+        
+    contador++;
+    }
+}
 
 private:
   // Función privada que guarda la imagen en formato .png
