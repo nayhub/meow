@@ -28,7 +28,7 @@ int main() {
   im.draw("imagen_desplazada_500.png");
   im.repeat_all();
  
-  
+  // AAAAAA te odio git de vsc 
 
 
   /* NOTA 1: Si usan el mismo nombre para las imágenes, entonces cada llamada al

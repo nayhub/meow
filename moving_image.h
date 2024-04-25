@@ -6,6 +6,8 @@
 #include <queue>
 #include <string>
 
+// AA A A A A A A A  A A A A A 
+
 // Clase que representa una imagen como una colección de 3 matrices siguiendo el
 // esquema de colores RGB
 
